@@ -551,54 +551,6 @@ Total: 23-29 days for complete implementation
 Critical Path: Phases 1-2-4-5 (cannot parallelize these)
 Parallelizable: Phases 3, 11 (can start earlier if needed)
 
-Key Architectural Decisions & Reasoning
-1. Why React over vanilla JS?
-
-Component reusability reduces code duplication
-React hooks provide clean state management
-Virtual DOM optimizes re-renders
-Strong TypeScript integration
-Large ecosystem for problem-solving
-2. Why Canvas API over WebGL?
-
-Canvas is simpler for 2D effects we need
-Better browser support (works on older devices)
-Easier to optimize and debug
-WebGL overkill for particle effects and neural network
-Can upgrade to WebGL later if needed
-3. Why Tailwind over CSS-in-JS?
-
-Smaller bundle size (purges unused styles)
-No runtime overhead
-Consistent design system through utilities
-Fast development with autocomplete
-Easy to maintain and scale
-4. Why custom animations over library (Framer Motion)?
-
-Full control over performance optimizations
-Smaller bundle size
-Can optimize specifically for our use cases
-No learning curve for future developers
-Can still use Framer Motion for complex scenarios if needed
-5. Why progressive enhancement?
-
-Ensures page works even if JS fails
-Better SEO (content visible before hydration)
-Faster perceived performance
-Graceful degradation for accessibility
-Builds confidence through working increments
-Summary
-This refined plan follows a dependency-driven, progressive enhancement strategy that builds from foundation to finish. Each phase produces a functional, testable increment while maintaining performance and accessibility.
-
-Key Differentiators:
-
-Performance-First: Device detection and optimization built-in from the start
-Accessibility-First: ARIA, keyboard nav, and motion preferences baked into every component
-Mobile-Exceptional: Not just responsive - mobile gets optimized, touch-first experience
-Data-Driven: Bolt Database integration captures analytics and user behavior from day one
-Production-Ready: Every phase includes testing, optimization, and quality checks
-The Result:
-
 A landing page that doesn't just describe AI - it demonstrates AI-level sophistication through intelligent interactions, predictive animations, and computational beauty. Every detail reinforces the message: "If our website is this good, imagine how good our AI is."
 
 The page will achieve the emotional goal: visitors will be impressed within 3 seconds, understand value within 5 seconds, and remember the experience long after leaving.
