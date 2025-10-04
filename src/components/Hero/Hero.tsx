@@ -24,7 +24,12 @@ export const Hero = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden noise-texture">
       <BlackHole />
-      <NeuralCanvas />
+      <NeuralCanvas
+        mouseInfluenceRadius={180}
+        mouseInfluenceStrength={0.08}
+        mouseInfluenceFalloff="smooth"
+        animationSpeed={1.0}
+      />
 
       <div className="absolute top-6 right-6 z-10 animate-in" style={{ animationDelay: '200ms' }}>
         <div className="glass px-6 py-3 rounded-full flex items-center gap-3">

@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useMousePosition } from '../../hooks/useMousePosition';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
-import { distance } from '../../utils/math';
+import { distance, easeOutQuad } from '../../utils/math';
+import { calculateMouseInfluence, type MouseInfluenceConfig } from '../../utils/physics';
 
 interface Node {
   x: number;
@@ -12,26 +13,40 @@ interface Node {
   pulsePhase: number;
   originalX: number;
   originalY: number;
+  mouseInfluenceX: number;
+  mouseInfluenceY: number;
 }
 
 interface NeuralCanvasProps {
   nodeCount?: number;
   connectionRadius?: number;
-  mouseInfluence?: number;
+  mouseInfluenceRadius?: number;
+  mouseInfluenceStrength?: number;
+  mouseInfluenceFalloff?: 'linear' | 'quadratic' | 'smooth';
   blackHoleGravity?: number;
+  animationSpeed?: number;
 }
 
 export const NeuralCanvas = ({
   nodeCount = 75,
   connectionRadius = 150,
-  mouseInfluence = 0.3,
+  mouseInfluenceRadius = 180,
+  mouseInfluenceStrength = 0.08,
+  mouseInfluenceFalloff = 'smooth',
   blackHoleGravity = 0.5,
+  animationSpeed = 1.0,
 }: NeuralCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nodesRef = useRef<Node[]>([]);
   const animationRef = useRef<number>();
-  const mousePosition = useMousePosition();
+  const mousePosition = useMousePosition({ smoothing: 0.12 });
   const prefersReducedMotion = useReducedMotion();
+  const lastFrameTimeRef = useRef<number>(performance.now());
+  const mouseInfluenceConfig = useRef<MouseInfluenceConfig>({
+    radius: mouseInfluenceRadius,
+    strength: mouseInfluenceStrength,
+    falloff: mouseInfluenceFalloff,
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -62,6 +77,8 @@ export const NeuralCanvas = ({
           vy: (Math.random() - 0.5) * 0.5,
           radius: Math.random() * 2 + 1,
           pulsePhase: Math.random() * Math.PI * 2,
+          mouseInfluenceX: 0,
+          mouseInfluenceY: 0,
         };
       });
     };
@@ -107,14 +124,21 @@ export const NeuralCanvas = ({
       ctx.stroke();
     };
 
-    const updateNodes = () => {
+    const updateNodes = (deltaTime: number) => {
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
       const blackHoleRadius = 250;
+      const dt = deltaTime * animationSpeed;
+
+      mouseInfluenceConfig.current = {
+        radius: mouseInfluenceRadius,
+        strength: mouseInfluenceStrength,
+        falloff: mouseInfluenceFalloff,
+      };
 
       nodesRef.current.forEach((node) => {
-        node.x += node.vx;
-        node.y += node.vy;
+        node.x += node.vx * dt;
+        node.y += node.vy * dt;
 
         if (node.x < 0 || node.x > window.innerWidth) node.vx *= -1;
         if (node.y < 0 || node.y > window.innerHeight) node.vy *= -1;
@@ -126,28 +150,30 @@ export const NeuralCanvas = ({
 
           if (distToCenter > blackHoleRadius && distToCenter < blackHoleRadius * 3) {
             const gravitationalForce = blackHoleGravity / (distToCenter * 0.01);
-            const forceX = (dxToCenter / distToCenter) * gravitationalForce * 0.001;
-            const forceY = (dyToCenter / distToCenter) * gravitationalForce * 0.001;
+            const forceX = (dxToCenter / distToCenter) * gravitationalForce * 0.001 * dt;
+            const forceY = (dyToCenter / distToCenter) * gravitationalForce * 0.001 * dt;
 
             node.x += forceX;
             node.y += forceY;
 
             const tangentAngle = Math.atan2(dyToCenter, dxToCenter) + Math.PI / 2;
-            node.x += Math.cos(tangentAngle) * gravitationalForce * 0.0002;
-            node.y += Math.sin(tangentAngle) * gravitationalForce * 0.0002;
+            node.x += Math.cos(tangentAngle) * gravitationalForce * 0.0002 * dt;
+            node.y += Math.sin(tangentAngle) * gravitationalForce * 0.0002 * dt;
           }
 
-          if (mouseInfluence > 0) {
-            const dx = mousePosition.x - node.x;
-            const dy = mousePosition.y - node.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+          const influence = calculateMouseInfluence(
+            node.x,
+            node.y,
+            mousePosition.x,
+            mousePosition.y,
+            mouseInfluenceConfig.current
+          );
 
-            if (dist < 200) {
-              const force = (1 - dist / 200) * mouseInfluence;
-              node.x += dx * force * 0.01;
-              node.y += dy * force * 0.01;
-            }
-          }
+          node.mouseInfluenceX += (influence.fx - node.mouseInfluenceX) * 0.15 * dt;
+          node.mouseInfluenceY += (influence.fy - node.mouseInfluenceY) * 0.15 * dt;
+
+          node.x += node.mouseInfluenceX * dt;
+          node.y += node.mouseInfluenceY * dt;
         }
       });
     };
@@ -155,10 +181,14 @@ export const NeuralCanvas = ({
     const animate = (time: number) => {
       if (!ctx || !canvas) return;
 
+      const currentTime = performance.now();
+      const deltaTime = Math.min((currentTime - lastFrameTimeRef.current) / 16.67, 2);
+      lastFrameTimeRef.current = currentTime;
+
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
       if (!prefersReducedMotion) {
-        updateNodes();
+        updateNodes(deltaTime);
       }
 
       nodesRef.current.forEach((node, i) => {
@@ -190,7 +220,7 @@ export const NeuralCanvas = ({
       }
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, [nodeCount, connectionRadius, mouseInfluence, mousePosition, prefersReducedMotion]);
+  }, [nodeCount, connectionRadius, mouseInfluenceRadius, mouseInfluenceStrength, mouseInfluenceFalloff, mousePosition, prefersReducedMotion, blackHoleGravity, animationSpeed]);
 
   return (
     <canvas
