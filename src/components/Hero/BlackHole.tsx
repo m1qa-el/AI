@@ -1,39 +1,42 @@
 import { useEffect, useRef } from 'react';
-import { useMousePosition } from '../../hooks/useMousePosition';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
-import { distance, lerp, clamp } from '../../utils/math';
 
-interface Particle {
+interface Ring {
+  radius: number;
   angle: number;
-  distance: number;
   speed: number;
+  opacity: number;
+  spiralOffset: number;
+}
+
+interface Star {
+  x: number;
+  y: number;
   size: number;
   opacity: number;
-  trail: { x: number; y: number; opacity: number }[];
+  twinklePhase: number;
 }
 
 interface BlackHoleProps {
-  radius?: number;
-  particleCount?: number;
+  ringCount?: number;
+  tiltAngle?: number;
   rotationSpeed?: number;
 }
 
 export const BlackHole = ({
-  radius = 250,
-  particleCount = 150,
-  rotationSpeed = 0.0005,
+  ringCount = 400,
+  tiltAngle = 70,
+  rotationSpeed = 0.00015,
 }: BlackHoleProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
+  const ringsRef = useRef<Ring[]>([]);
+  const starsRef = useRef<Star[]>([]);
   const animationRef = useRef<number>();
-  const mousePosition = useMousePosition();
   const prefersReducedMotion = useReducedMotion();
   const centerRef = useRef({ x: 0, y: 0 });
   const timeRef = useRef(0);
-  const fpsRef = useRef<number[]>([]);
-  const lastFrameTimeRef = useRef(0);
   const qualityRef = useRef(1);
-  const responsiveRadiusRef = useRef(radius);
+  const eventHorizonRadiusRef = useRef(120);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -57,61 +60,122 @@ export const BlackHole = ({
 
       if (window.innerWidth < 768) {
         qualityRef.current = 0.5;
-        responsiveRadiusRef.current = radius * 0.6;
+        eventHorizonRadiusRef.current = 80;
       } else if (window.innerWidth < 1024) {
         qualityRef.current = 0.7;
-        responsiveRadiusRef.current = radius * 0.8;
+        eventHorizonRadiusRef.current = 100;
       } else {
         qualityRef.current = 1;
-        responsiveRadiusRef.current = radius;
+        eventHorizonRadiusRef.current = 120;
       }
     };
 
-    const initParticles = () => {
-      const adjustedCount = Math.floor(particleCount * qualityRef.current);
-      const currentRadius = responsiveRadiusRef.current;
-      particlesRef.current = Array.from({ length: adjustedCount }, () => {
+    const initRings = () => {
+      const adjustedRingCount = Math.floor(ringCount * qualityRef.current);
+      const maxRadius = Math.max(window.innerWidth, window.innerHeight) * 0.8;
+      const minRadius = eventHorizonRadiusRef.current;
+      const spiralTightness = 0.012;
+
+      ringsRef.current = Array.from({ length: adjustedRingCount }, (_, i) => {
+        const t = i / adjustedRingCount;
+        const radius = minRadius + (maxRadius - minRadius) * Math.exp(t * spiralTightness * adjustedRingCount) / Math.exp(spiralTightness * adjustedRingCount);
+
         const angle = Math.random() * Math.PI * 2;
-        const dist = currentRadius * 0.8 + Math.random() * currentRadius * 1.2;
+        const speed = (1 / (radius * 0.01)) * 0.1 + rotationSpeed * 50;
+        const spiralOffset = (i / adjustedRingCount) * Math.PI * 0.5;
 
         return {
+          radius,
           angle,
-          distance: dist,
-          speed: (1 / dist) * 5000 + rotationSpeed * 100,
-          size: Math.random() * 2 + 0.5,
-          opacity: Math.random() * 0.8 + 0.2,
-          trail: [],
+          speed,
+          opacity: 0.3 + Math.random() * 0.4,
+          spiralOffset,
         };
       });
     };
 
-    const monitorPerformance = (currentTime: number) => {
-      if (lastFrameTimeRef.current > 0) {
-        const delta = currentTime - lastFrameTimeRef.current;
-        const fps = 1000 / delta;
-        fpsRef.current.push(fps);
+    const initStars = () => {
+      const starCount = 150;
+      starsRef.current = Array.from({ length: starCount }, () => ({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        size: Math.random() * 1.5 + 0.5,
+        opacity: Math.random() * 0.5 + 0.3,
+        twinklePhase: Math.random() * Math.PI * 2,
+      }));
+    };
 
-        if (fpsRef.current.length > 30) {
-          fpsRef.current.shift();
-        }
+    const drawStars = (time: number) => {
+      starsRef.current.forEach((star) => {
+        const twinkle = Math.sin(time * 0.001 + star.twinklePhase) * 0.3 + 0.7;
+        const opacity = star.opacity * twinkle;
 
-        if (fpsRef.current.length === 30) {
-          const avgFps = fpsRef.current.reduce((a, b) => a + b, 0) / 30;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.6})`;
+        ctx.fill();
+      });
+    };
 
-          if (avgFps < 30 && qualityRef.current > 0.3) {
-            qualityRef.current = Math.max(0.3, qualityRef.current - 0.1);
-            initParticles();
-          } else if (avgFps > 55 && qualityRef.current < 1) {
-            qualityRef.current = Math.min(1, qualityRef.current + 0.05);
+    const drawEllipticalRing = (
+      centerX: number,
+      centerY: number,
+      radius: number,
+      angle: number,
+      tilt: number,
+      opacity: number,
+      isBack: boolean
+    ) => {
+      const segments = 100;
+      const tiltRad = (tilt * Math.PI) / 180;
+      const semiMinor = radius * Math.sin(tiltRad);
+      const semiMajor = radius;
+
+      ctx.beginPath();
+      let firstPoint = true;
+
+      for (let i = 0; i <= segments; i++) {
+        const t = (i / segments) * Math.PI * 2;
+
+        const localX = semiMajor * Math.cos(t);
+        const localY = semiMinor * Math.sin(t);
+
+        const rotatedX = localX * Math.cos(angle) - localY * Math.sin(angle);
+        const rotatedY = localX * Math.sin(angle) + localY * Math.cos(angle);
+
+        const x = centerX + rotatedX;
+        const y = centerY + rotatedY;
+
+        const z = semiMinor * Math.sin(t);
+        const isBackHalf = z < 0;
+
+        if (isBack === isBackHalf) {
+          const distFromCenter = Math.sqrt(
+            (x - centerX) ** 2 + (y - centerY) ** 2
+          );
+
+          if (distFromCenter > eventHorizonRadiusRef.current) {
+            if (firstPoint) {
+              ctx.moveTo(x, y);
+              firstPoint = false;
+            } else {
+              ctx.lineTo(x, y);
+            }
           }
         }
       }
-      lastFrameTimeRef.current = currentTime;
+
+      const depthFactor = isBack ? 0.4 : 1.0;
+      const finalOpacity = opacity * depthFactor;
+
+      ctx.strokeStyle = `rgba(229, 229, 229, ${finalOpacity})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     };
 
     const drawEventHorizon = (centerX: number, centerY: number, time: number) => {
-      const pulseIntensity = Math.sin(time * 0.001) * 0.1 + 0.9;
-      const eventHorizonRadius = responsiveRadiusRef.current * 0.35 * pulseIntensity;
+      const pulseIntensity = Math.sin(time * 0.0008) * 0.05 + 0.95;
+      const horizonRadius = eventHorizonRadiusRef.current * pulseIntensity;
 
       const gradient = ctx.createRadialGradient(
         centerX,
@@ -119,214 +183,82 @@ export const BlackHole = ({
         0,
         centerX,
         centerY,
-        eventHorizonRadius
+        horizonRadius * 1.2
       );
 
       gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-      gradient.addColorStop(0.5, 'rgba(13, 13, 13, 0.95)');
-      gradient.addColorStop(0.8, 'rgba(38, 38, 38, 0.7)');
-      gradient.addColorStop(1, 'rgba(64, 64, 64, 0)');
+      gradient.addColorStop(0.7, 'rgba(0, 0, 0, 1)');
+      gradient.addColorStop(0.85, 'rgba(20, 20, 20, 0.8)');
+      gradient.addColorStop(1, 'rgba(40, 40, 40, 0)');
 
       ctx.beginPath();
-      ctx.arc(centerX, centerY, eventHorizonRadius, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, horizonRadius * 1.2, 0, Math.PI * 2);
       ctx.fillStyle = gradient;
       ctx.fill();
-
-      const innerGradient = ctx.createRadialGradient(
-        centerX,
-        centerY,
-        0,
-        centerX,
-        centerY,
-        eventHorizonRadius * 0.3
-      );
-
-      innerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
-      innerGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, eventHorizonRadius * 0.3, 0, Math.PI * 2);
-      ctx.fillStyle = innerGradient;
-      ctx.fill();
-    };
-
-    const drawPhotonSphere = (centerX: number, centerY: number, time: number) => {
-      const photonRadius = responsiveRadiusRef.current * 0.5;
-      const segments = 60;
-      const waveOffset = time * 0.002;
-
-      ctx.strokeStyle = 'rgba(229, 229, 229, 0.15)';
-      ctx.lineWidth = 2;
-
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        const layerRadius = photonRadius + i * 15;
-
-        for (let j = 0; j <= segments; j++) {
-          const angle = (j / segments) * Math.PI * 2;
-          const wave = Math.sin(angle * 3 + waveOffset + i * 0.5) * 5;
-          const r = layerRadius + wave;
-          const x = centerX + Math.cos(angle) * r;
-          const y = centerY + Math.sin(angle) * r;
-
-          if (j === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-
-        ctx.stroke();
-      }
-    };
-
-    const drawGravitationalLensing = (centerX: number, centerY: number) => {
-      const currentRadius = responsiveRadiusRef.current;
-      const lensRadius = currentRadius * 1.5;
-
-      for (let i = 0; i < 5; i++) {
-        const gradient = ctx.createRadialGradient(
-          centerX,
-          centerY,
-          currentRadius * 0.6 + i * 30,
-          centerX,
-          centerY,
-          currentRadius * 0.8 + i * 30
-        );
-
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${0.03 - i * 0.005})`);
-        gradient.addColorStop(0.5, `rgba(255, 255, 255, ${0.01 - i * 0.002})`);
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, currentRadius * 0.8 + i * 30, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-      }
-    };
-
-    const drawAccretionDisk = (centerX: number, centerY: number, time: number) => {
-      const currentRadius = responsiveRadiusRef.current;
-      particlesRef.current.forEach((particle) => {
-        if (!prefersReducedMotion) {
-          particle.angle += (particle.speed * rotationSpeed);
-
-          const distToCenter = particle.distance;
-          const eventHorizonRadius = currentRadius * 0.35;
-
-          if (distToCenter > eventHorizonRadius) {
-            const pullStrength = 1 / (distToCenter * 0.01);
-            particle.distance = Math.max(eventHorizonRadius, particle.distance - pullStrength * 0.3);
-          } else {
-            particle.opacity *= 0.95;
-            if (particle.opacity < 0.01) {
-              particle.angle = Math.random() * Math.PI * 2;
-              particle.distance = currentRadius * 0.8 + Math.random() * currentRadius * 1.2;
-              particle.opacity = Math.random() * 0.8 + 0.2;
-            }
-          }
-        }
-
-        const x = centerX + Math.cos(particle.angle) * particle.distance;
-        const y = centerY + Math.sin(particle.angle) * particle.distance;
-
-        if (particle.trail.length > 8) {
-          particle.trail.shift();
-        }
-        particle.trail.push({ x, y, opacity: particle.opacity });
-
-        particle.trail.forEach((point, index) => {
-          const trailOpacity = (index / particle.trail.length) * point.opacity * 0.3;
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, particle.size * 0.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(163, 163, 163, ${trailOpacity})`;
-          ctx.fill();
-        });
-
-        const distanceFromCenter = particle.distance;
-        const normalizedDist = clamp(distanceFromCenter / (currentRadius * 2), 0, 1);
-        const brightness = 1 - normalizedDist;
-
-        const dopplerSide = Math.cos(particle.angle - time * 0.001);
-        const dopplerBrightness = dopplerSide > 0 ? 1.3 : 0.7;
-
-        const gradient = ctx.createRadialGradient(x, y, 0, x, y, particle.size * 2);
-        gradient.addColorStop(0, `rgba(229, 229, 229, ${particle.opacity * brightness * dopplerBrightness})`);
-        gradient.addColorStop(0.5, `rgba(163, 163, 163, ${particle.opacity * brightness * dopplerBrightness * 0.5})`);
-        gradient.addColorStop(1, 'rgba(115, 115, 115, 0)');
-
-        ctx.beginPath();
-        ctx.arc(x, y, particle.size * 2, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-      });
-    };
-
-    const drawHawkingRadiation = (centerX: number, centerY: number, time: number) => {
-      const eventHorizonRadius = responsiveRadiusRef.current * 0.35;
-      const particleCount = 20;
-
-      for (let i = 0; i < particleCount; i++) {
-        const angle = (i / particleCount) * Math.PI * 2 + time * 0.0005;
-        const distance = eventHorizonRadius + ((time + i * 100) % 1000) * 0.1;
-        const x = centerX + Math.cos(angle) * distance;
-        const y = centerY + Math.sin(angle) * distance;
-
-        const opacity = Math.max(0, 1 - (distance - eventHorizonRadius) / 100);
-
-        ctx.beginPath();
-        ctx.arc(x, y, 1, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(229, 229, 229, ${opacity * 0.4})`;
-        ctx.fill();
-      }
-    };
-
-    const drawGravitationalWaves = (centerX: number, centerY: number, time: number) => {
-      const waveCount = 3;
-      const maxRadius = responsiveRadiusRef.current * 2.5;
-
-      for (let i = 0; i < waveCount; i++) {
-        const waveRadius = ((time * 0.05 + i * 100) % maxRadius);
-        const opacity = Math.max(0, 1 - (waveRadius / maxRadius));
-
-        ctx.strokeStyle = `rgba(229, 229, 229, ${opacity * 0.08})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, waveRadius, 0, Math.PI * 2);
-        ctx.stroke();
-      }
     };
 
     const animate = (currentTime: number) => {
       if (!ctx || !canvas) return;
 
-      monitorPerformance(currentTime);
       timeRef.current = currentTime;
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
       const centerX = centerRef.current.x;
       const centerY = centerRef.current.y;
 
-      drawGravitationalWaves(centerX, centerY, currentTime);
-      drawGravitationalLensing(centerX, centerY);
-      drawAccretionDisk(centerX, centerY, currentTime);
-      drawPhotonSphere(centerX, centerY, currentTime);
+      drawStars(currentTime);
+
+      ringsRef.current.forEach((ring) => {
+        if (!prefersReducedMotion) {
+          ring.angle += ring.speed * rotationSpeed;
+          ring.radius -= 0.015;
+
+          if (ring.radius <= eventHorizonRadiusRef.current) {
+            const maxRadius = Math.max(window.innerWidth, window.innerHeight) * 0.8;
+            ring.radius = maxRadius;
+            ring.angle = Math.random() * Math.PI * 2;
+          }
+        }
+      });
+
+      ringsRef.current.forEach((ring) => {
+        drawEllipticalRing(
+          centerX,
+          centerY,
+          ring.radius,
+          ring.angle + ring.spiralOffset,
+          tiltAngle,
+          ring.opacity,
+          true
+        );
+      });
+
       drawEventHorizon(centerX, centerY, currentTime);
 
-      if (!prefersReducedMotion) {
-        drawHawkingRadiation(centerX, centerY, currentTime);
-      }
+      ringsRef.current.forEach((ring) => {
+        drawEllipticalRing(
+          centerX,
+          centerY,
+          ring.radius,
+          ring.angle + ring.spiralOffset,
+          tiltAngle,
+          ring.opacity,
+          false
+        );
+      });
 
       animationRef.current = requestAnimationFrame(animate);
     };
 
     resizeCanvas();
-    initParticles();
+    initRings();
+    initStars();
     animate(0);
 
     window.addEventListener('resize', () => {
       resizeCanvas();
-      initParticles();
+      initRings();
+      initStars();
     });
 
     return () => {
@@ -335,7 +267,7 @@ export const BlackHole = ({
       }
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, [radius, particleCount, rotationSpeed, mousePosition, prefersReducedMotion]);
+  }, [ringCount, tiltAngle, rotationSpeed, prefersReducedMotion]);
 
   return (
     <canvas
