@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Activity } from 'lucide-react';
 import { NeuralCanvas } from './NeuralCanvas';
+import { BlackHole } from './BlackHole';
 
 export const Hero = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -22,6 +23,7 @@ export const Hero = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden noise-texture">
+      <BlackHole />
       <NeuralCanvas />
 
       <div className="absolute top-6 right-6 z-10 animate-in" style={{ animationDelay: '200ms' }}>

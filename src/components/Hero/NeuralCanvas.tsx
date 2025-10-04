@@ -10,18 +10,22 @@ interface Node {
   vy: number;
   radius: number;
   pulsePhase: number;
+  originalX: number;
+  originalY: number;
 }
 
 interface NeuralCanvasProps {
   nodeCount?: number;
   connectionRadius?: number;
   mouseInfluence?: number;
+  blackHoleGravity?: number;
 }
 
 export const NeuralCanvas = ({
   nodeCount = 75,
   connectionRadius = 150,
   mouseInfluence = 0.3,
+  blackHoleGravity = 0.5,
 }: NeuralCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nodesRef = useRef<Node[]>([]);
@@ -46,14 +50,20 @@ export const NeuralCanvas = ({
     };
 
     const initNodes = () => {
-      nodesRef.current = Array.from({ length: nodeCount }, () => ({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        radius: Math.random() * 2 + 1,
-        pulsePhase: Math.random() * Math.PI * 2,
-      }));
+      nodesRef.current = Array.from({ length: nodeCount }, () => {
+        const x = Math.random() * window.innerWidth;
+        const y = Math.random() * window.innerHeight;
+        return {
+          x,
+          y,
+          originalX: x,
+          originalY: y,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          radius: Math.random() * 2 + 1,
+          pulsePhase: Math.random() * Math.PI * 2,
+        };
+      });
     };
 
     const drawNode = (node: Node, time: number) => {
@@ -98,6 +108,10 @@ export const NeuralCanvas = ({
     };
 
     const updateNodes = () => {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const blackHoleRadius = 250;
+
       nodesRef.current.forEach((node) => {
         node.x += node.vx;
         node.y += node.vy;
@@ -105,15 +119,34 @@ export const NeuralCanvas = ({
         if (node.x < 0 || node.x > window.innerWidth) node.vx *= -1;
         if (node.y < 0 || node.y > window.innerHeight) node.vy *= -1;
 
-        if (!prefersReducedMotion && mouseInfluence > 0) {
-          const dx = mousePosition.x - node.x;
-          const dy = mousePosition.y - node.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+        if (!prefersReducedMotion) {
+          const dxToCenter = centerX - node.x;
+          const dyToCenter = centerY - node.y;
+          const distToCenter = Math.sqrt(dxToCenter * dxToCenter + dyToCenter * dyToCenter);
 
-          if (dist < 200) {
-            const force = (1 - dist / 200) * mouseInfluence;
-            node.x += dx * force * 0.01;
-            node.y += dy * force * 0.01;
+          if (distToCenter > blackHoleRadius && distToCenter < blackHoleRadius * 3) {
+            const gravitationalForce = blackHoleGravity / (distToCenter * 0.01);
+            const forceX = (dxToCenter / distToCenter) * gravitationalForce * 0.001;
+            const forceY = (dyToCenter / distToCenter) * gravitationalForce * 0.001;
+
+            node.x += forceX;
+            node.y += forceY;
+
+            const tangentAngle = Math.atan2(dyToCenter, dxToCenter) + Math.PI / 2;
+            node.x += Math.cos(tangentAngle) * gravitationalForce * 0.0002;
+            node.y += Math.sin(tangentAngle) * gravitationalForce * 0.0002;
+          }
+
+          if (mouseInfluence > 0) {
+            const dx = mousePosition.x - node.x;
+            const dy = mousePosition.y - node.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 200) {
+              const force = (1 - dist / 200) * mouseInfluence;
+              node.x += dx * force * 0.01;
+              node.y += dy * force * 0.01;
+            }
           }
         }
       });
@@ -163,7 +196,7 @@ export const NeuralCanvas = ({
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"
-      style={{ zIndex: 0 }}
+      style={{ zIndex: 2 }}
       aria-hidden="true"
     />
   );
