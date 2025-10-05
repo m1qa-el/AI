@@ -201,7 +201,7 @@ export const BlackHole = ({
       ctx.save();
 
       const text = 'm1qa';
-      const fontSize = window.innerWidth < 768 ? 48 : window.innerWidth < 1024 ? 64 : 80;
+      const fontSize = window.innerWidth < 768 ? 32 : window.innerWidth < 1024 ? 42 : 52;
 
       ctx.font = `900 ${fontSize}px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
       ctx.textAlign = 'center';
@@ -210,15 +210,15 @@ export const BlackHole = ({
 
       ctx.translate(centerX, centerY);
 
-      const glowIntensity = Math.sin(time * 0.002) * 0.3 + 0.7;
-      const glowSize = 25 + glowIntensity * 15;
+      const glowIntensity = Math.sin(time * 0.002) * 0.2 + 0.5;
+      const glowSize = 15 + glowIntensity * 10;
 
-      for (let i = 0; i < 4; i++) {
-        ctx.shadowColor = `rgba(255, 255, 255, ${0.8 - i * 0.18})`;
-        ctx.shadowBlur = glowSize + i * 12;
+      for (let i = 0; i < 3; i++) {
+        ctx.shadowColor = `rgba(255, 255, 255, ${0.4 - i * 0.12})`;
+        ctx.shadowBlur = glowSize + i * 8;
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
         ctx.fillText(text, 0, 0);
       }
 
@@ -235,7 +235,7 @@ export const BlackHole = ({
       );
       shimmerGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
       shimmerGradient.addColorStop(0.4, 'rgba(255, 255, 255, 0)');
-      shimmerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+      shimmerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
       shimmerGradient.addColorStop(0.6, 'rgba(255, 255, 255, 0)');
       shimmerGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
@@ -244,8 +244,8 @@ export const BlackHole = ({
       ctx.fillText(text, 0, 0);
 
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1.5;
       ctx.strokeText(text, 0, 0);
 
       ctx.restore();
