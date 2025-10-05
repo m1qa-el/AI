@@ -197,75 +197,6 @@ export const BlackHole = ({
       ctx.fill();
     };
 
-    const drawCenterText = (centerX: number, centerY: number, time: number) => {
-      ctx.save();
-
-      const text = 'm1qa';
-      const fontSize = window.innerWidth < 768 ? 36 : window.innerWidth < 1024 ? 46 : 56;
-
-      ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.translate(centerX, centerY);
-
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 2;
-      ctx.fillStyle = 'rgba(40, 40, 40, 0.3)';
-      ctx.fillText(text, 0, 0);
-
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-
-      const glowIntensity = Math.sin(time * 0.0015) * 0.15 + 0.85;
-
-      for (let i = 0; i < 5; i++) {
-        const layerOpacity = (0.25 - i * 0.04) * glowIntensity;
-        const layerBlur = 12 + i * 6;
-
-        ctx.shadowColor = `rgba(255, 255, 255, ${layerOpacity})`;
-        ctx.shadowBlur = layerBlur;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-        ctx.fillText(text, 0, 0);
-      }
-
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
-      ctx.fillText(text, 0, 0);
-
-      const shimmerPhase = (time * 0.0025) % 1;
-      const shimmerX = (shimmerPhase * 2 - 1) * fontSize * 2.5;
-      const shimmerGradient = ctx.createLinearGradient(
-        shimmerX - fontSize * 0.8,
-        -fontSize * 0.5,
-        shimmerX + fontSize * 0.8,
-        fontSize * 0.5
-      );
-      shimmerGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-      shimmerGradient.addColorStop(0.3, 'rgba(255, 255, 255, 0)');
-      shimmerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.25)');
-      shimmerGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0)');
-      shimmerGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.fillStyle = shimmerGradient;
-      ctx.fillText(text, 0, 0);
-
-      ctx.globalCompositeOperation = 'source-over';
-
-      ctx.lineWidth = 0.5;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.strokeText(text, 0, 0);
-
-      ctx.restore();
-    };
-
     const animate = (currentTime: number) => {
       if (!ctx || !canvas) return;
 
@@ -315,8 +246,6 @@ export const BlackHole = ({
           false
         );
       });
-
-      drawCenterText(centerX, centerY, currentTime);
 
       animationRef.current = requestAnimationFrame(animate);
     };
