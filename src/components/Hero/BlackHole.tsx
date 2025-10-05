@@ -201,38 +201,24 @@ export const BlackHole = ({
       ctx.save();
 
       const text = 'm1qa';
-      const baseFontSize = window.innerWidth < 768 ? 48 : window.innerWidth < 1024 ? 64 : 80;
-
-      const breathe = Math.sin(time * 0.0012) * 0.08 + 1;
-      const fontSize = baseFontSize * breathe;
+      const fontSize = window.innerWidth < 768 ? 48 : window.innerWidth < 1024 ? 64 : 80;
 
       ctx.font = `900 ${fontSize}px system-ui, -apple-system, "Segoe UI", Arial, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.letterSpacing = '0.1em';
 
-      const rotation = Math.sin(time * 0.0005) * 0.03;
       ctx.translate(centerX, centerY);
-      ctx.rotate(rotation);
 
-      const colorPhase = (time * 0.0008) % (Math.PI * 2);
-      const hue1 = Math.sin(colorPhase) * 30 + 200;
-      const hue2 = Math.cos(colorPhase) * 30 + 240;
+      const glowIntensity = Math.sin(time * 0.002) * 0.3 + 0.7;
+      const glowSize = 25 + glowIntensity * 15;
 
-      const textGradient = ctx.createLinearGradient(-fontSize * 2, -fontSize, fontSize * 2, fontSize);
-      textGradient.addColorStop(0, `hsl(${hue1}, 80%, 75%)`);
-      textGradient.addColorStop(0.5, `hsl(220, 85%, 85%)`);
-      textGradient.addColorStop(1, `hsl(${hue2}, 80%, 75%)`);
-
-      const glowIntensity = Math.sin(time * 0.002) * 0.5 + 0.5;
-      const glowSize = 20 + glowIntensity * 15;
-
-      for (let i = 0; i < 3; i++) {
-        ctx.shadowColor = `rgba(200, 220, 255, ${0.6 - i * 0.15})`;
-        ctx.shadowBlur = glowSize + i * 15;
+      for (let i = 0; i < 4; i++) {
+        ctx.shadowColor = `rgba(255, 255, 255, ${0.8 - i * 0.18})`;
+        ctx.shadowBlur = glowSize + i * 12;
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
-        ctx.fillStyle = textGradient;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         ctx.fillText(text, 0, 0);
       }
 
@@ -249,7 +235,7 @@ export const BlackHole = ({
       );
       shimmerGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
       shimmerGradient.addColorStop(0.4, 'rgba(255, 255, 255, 0)');
-      shimmerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.4)');
+      shimmerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
       shimmerGradient.addColorStop(0.6, 'rgba(255, 255, 255, 0)');
       shimmerGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
@@ -258,8 +244,8 @@ export const BlackHole = ({
       ctx.fillText(text, 0, 0);
 
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 2;
       ctx.strokeText(text, 0, 0);
 
       ctx.restore();
