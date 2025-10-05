@@ -10,23 +10,13 @@
   }
 
   html {
-    overflow: hidden;
-    height: 100%;
+    @apply scroll-smooth;
   }
 
   body {
-    @apply bg-obsidian text-pearl font-body antialiased;
+    @apply bg-obsidian text-pearl font-body antialiased overflow-x-hidden;
     font-size: 16px;
     line-height: 1.6;
-    overflow: hidden;
-    height: 100%;
-    position: fixed;
-    width: 100%;
-  }
-
-  #root {
-    height: 100%;
-    overflow: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -35,6 +25,23 @@
 
   ::selection {
     @apply bg-pearl/20 text-pearl;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-obsidian;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-carbon rounded-full;
+    border: 2px solid theme('colors.obsidian');
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate;
   }
 }
 
