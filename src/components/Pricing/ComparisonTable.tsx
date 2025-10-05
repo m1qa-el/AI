@@ -19,7 +19,7 @@ interface FeatureCategory {
   features: Feature[];
 }
 
-export const ComparisonTable = ({ isAnnual }: ComparisonTableProps) => {
+export const ComparisonTable = ({ isAnnual: _isAnnual }: ComparisonTableProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(['Core Features'])
   );
@@ -238,7 +238,7 @@ export const ComparisonTable = ({ isAnnual }: ComparisonTableProps) => {
               </tr>
             </thead>
             <tbody>
-              {featureCategories.map((category, categoryIndex) => {
+              {featureCategories.map((category) => {
                 const isExpanded = expandedCategories.has(category.category);
                 return (
                   <tr key={category.category} className="border-b border-pearl/5 last:border-b-0">
@@ -266,7 +266,7 @@ export const ComparisonTable = ({ isAnnual }: ComparisonTableProps) => {
                       >
                         <table className="w-full">
                           <tbody>
-                            {category.features.map((feature, featureIndex) => (
+                            {category.features.map((feature) => (
                               <tr
                                 key={feature.name}
                                 className="border-b border-pearl/5 last:border-b-0 hover:bg-pearl/5 transition-colors duration-144"

@@ -159,6 +159,32 @@
   }
 }
 
+@layer utilities {
+  .full-page-container {
+    @apply fixed inset-0 overflow-hidden;
+  }
+
+  .full-page-wrapper {
+    @apply relative w-full h-full;
+  }
+
+  .full-page-section {
+    @apply absolute inset-0 w-full h-full overflow-y-auto overflow-x-hidden;
+  }
+
+  .section-indicators {
+    @apply fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3;
+  }
+
+  .indicator-dot {
+    @apply w-2.5 h-2.5 rounded-full bg-silver/30 transition-all duration-233 hover:bg-silver/60 hover:scale-125 focus:outline-none focus-ring;
+  }
+
+  .indicator-dot.active {
+    @apply bg-pearl scale-125 shadow-glow-sm;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -167,4 +193,25 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  .full-page-section {
+    transition: none !important;
+  }
+}
+
+@supports not (scroll-snap-type: y mandatory) {
+  .full-page-container {
+    overflow-y: auto;
+  }
+}
+
+.no-js .full-page-container {
+  @apply overflow-y-auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+
+.no-js .full-page-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }

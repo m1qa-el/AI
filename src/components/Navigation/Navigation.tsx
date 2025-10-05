@@ -1,46 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import { useScrollPosition } from '../../hooks/useScrollPosition';
 
 export const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const { scrollY, scrollDirection } = useScrollPosition();
-
-  useEffect(() => {
-    if (scrollY > 100) {
-      setIsVisible(scrollDirection === 'up' || scrollY < 150);
-    } else {
-      setIsVisible(true);
-    }
-  }, [scrollY, scrollDirection]);
 
   const navItems = [
     { label: 'Features', href: '#features' },
-    { label: 'Demo', href: '#demo' },
+    { label: 'Stats', href: '#stats' },
     { label: 'Pricing', href: '#pricing' },
   ];
 
   const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      setIsOpen(false);
-    }
+    window.location.hash = href;
+    setIsOpen(false);
   };
 
   return (
     <>
-      <nav
-        className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-377 ease-ai-glide ${
-          isVisible ? 'translate-y-0 opacity-100' : '-translate-y-20 opacity-0'
-        }`}
-      >
+      <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-377 ease-ai-glide">
         <div className="glass-heavy px-8 py-4 rounded-full shadow-depth-3">
           <div className="hidden md:flex items-center gap-8">
             <button
               className="text-pearl font-display font-semibold text-lg hover:text-gradient-animated transition-all"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              onClick={() => (window.location.hash = '#hero')}
             >
               NEURAL
             </button>
@@ -68,7 +50,7 @@ export const Navigation = () => {
           <div className="flex md:hidden items-center justify-between gap-4">
             <button
               className="text-pearl font-display font-semibold text-lg"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              onClick={() => (window.location.hash = '#hero')}
             >
               NEURAL
             </button>

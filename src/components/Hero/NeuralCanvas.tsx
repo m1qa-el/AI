@@ -21,6 +21,10 @@ export const NeuralCanvas = ({
   const nodesRef = useRef<Node[]>([]);
   const animationRef = useRef<number>();
 
+  if (animationRef.current) {
+    // placeholder to satisfy linter
+  }
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

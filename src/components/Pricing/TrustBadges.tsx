@@ -132,7 +132,7 @@ export const TrustBadges = () => {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {paymentMethods.map((method, index) => (
+            {paymentMethods.map((method) => (
               <div
                 key={method}
                 className={`px-4 py-2 rounded-lg glass border border-pearl/10 transition-all duration-233 hover:border-pearl/20 hover:scale-105`}
