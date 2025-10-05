@@ -2,6 +2,7 @@ import { Hero } from './components/Hero/Hero';
 import { Navigation } from './components/Navigation/Navigation';
 import { Features } from './components/Features/Features';
 import { Stats } from './components/Stats/Stats';
+import { Pricing } from './components/Pricing/Pricing';
 import { CTA } from './components/CTA/CTA';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
       <Hero />
       <Features />
       <Stats />
+      <Pricing />
       <CTA />
 
       <footer className="relative py-12 px-6 border-t border-slate/20">
